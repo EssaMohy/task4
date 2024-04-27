@@ -4,38 +4,70 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  confirmPasswordReset,
-  signInWithCredential,
-  FacebookAuthProvider,
+  signOut,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-// Listen for authentication state to change.
-onAuthStateChanged(auth, (user) => {
-  if (user != null) {
-    console.log("We are authenticated now!");
-  }
+import { router } from "expo-router";
 
-  // Do other things
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    console.log("We are authenticated now!");
+    router.replace(`/home`);
+  } else {
+    console.log("We are not authenticated");
+    router.replace("/account/login");
+  }
 });
 
-async function register(email, password) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  await data(email);
-  return cred;
+async function register(name, email, password) {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await addUserData(cred.user.uid, name, email);
+    return cred;
+  } catch (error) {
+    console.error("Registration Error:", error.message);
+    throw error;
+  }
 }
 
 async function login(email, password) {
-  await signInWithEmailAndPassword(auth, email, password);
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error("Login Error:", error.message);
+    throw error;
+  }
 }
 
-async function data(email) {
-  await setDoc(doc(db, "users", auth.currentUser.uid), {
-    email: email,
-  });
+async function addUserData(uid, name, email) {
+  try {
+    await setDoc(doc(db, "users", uid), {
+      name: name,
+      email: email,
+      uid: uid,
+    });
+  } catch (error) {
+    console.error("Add User Data Error:", error.message);
+    throw error;
+  }
 }
 
-async function Reset(email) {
-  await sendPasswordResetEmail(auth, email);
+async function resetPassword(email) {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error("Password Reset Error:", error.message);
+    throw error;
+  }
 }
 
-export { register, login, Reset };
+async function logout() {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout Error:", error.message);
+    throw error;
+  }
+}
+
+export { register, login, resetPassword, logout };

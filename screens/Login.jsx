@@ -20,7 +20,7 @@ const Login = () => {
     try {
       const credentials = await login(email, password);
       console.log("credentials", credentials);
-      router.navigate(`/home`);
+      router.replace(`/home`);
     } catch (error) {
       console.log("error", JSON.stringify(error));
       setError(error);

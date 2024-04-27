@@ -12,16 +12,16 @@ import { register } from "../firebase/auth";
 import COLORS from "../constants/colors";
 
 const Register = () => {
-  // const [userName, setUserName] = useState("");
+  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handlePress = async () => {
     try {
-      const credentials = await register(email, password);
+      const credentials = await register(userName, email, password);
       console.log("credentials", credentials);
-      router.navigate(`/home`);
+      router.replace(`/home`);
     } catch (error) {
       console.log("error", JSON.stringify(error));
       setError(error);
@@ -30,13 +30,13 @@ const Register = () => {
 
   return (
     <View style={styles.container}>
-      {/* <TextInput
+      <Text style={styles.title}>Make Your Account</Text>
+      <TextInput
         placeholder="Name"
         value={userName}
         onChangeText={setUserName}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      /> */}
-      <Text style={styles.title}>Make Your Account</Text>
+        style={styles.input}
+      />
       <TextInput
         placeholder="Email"
         value={email}

@@ -1,76 +1,112 @@
-import React, { useState } from "react";
-import { View, TextInput, Button, Text, StyleSheet } from "react-native";
-import COLORS from "./constants/colors";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Button,
+} from "react-native";
+import { logout } from "./firebase/auth";
+import { router } from "expo-router";
+import { auth, db } from "./firebase/firebaseConfig";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-const TodoPage = () => {
-  const [todoText, setTodoText] = useState("");
-  const [todos, setTodos] = useState([]);
+const Header = () => {
+  const [error, setError] = useState("");
+  const [users, setUsers] = useState([]);
 
-  const addTodo = () => {
-    if (todoText.trim() !== "") {
-      setTodos([...todos, todoText]);
-      setTodoText("");
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const userSnapshot = await getDocs(
+          query(
+            collection(db, "users"),
+            where("uid", "!=", auth.currentUser.uid)
+          )
+        );
+        const userData = userSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(userData);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setError(error.message);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handlePress = async () => {
+    try {
+      await logout();
+      router.replace("/account/login");
+    } catch (error) {
+      console.log("Logout Error:", error);
+      setError(error.message);
     }
   };
 
-  const removeTodo = (index) => {
-    const newTodos = [...todos];
-    newTodos.splice(index, 1);
-    setTodos(newTodos);
-  };
+  const renderChatItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => router.push("/chat/chatRoom")}
+      style={styles.messageContainer}
+    >
+      <Text style={styles.sender}>{item.name}</Text>
+      {/* You can display other user information here */}
+    </TouchableOpacity>
+  );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>To-Do List</Text>
-      <TextInput
-        placeholder="Add a new todo"
-        value={todoText}
-        onChangeText={setTodoText}
-        style={styles.input}
+    <View>
+      <View style={styles.container}>
+        <Text style={styles.title}>ChatApp</Text>
+        <Button title="Logout" onPress={handlePress} color="red" />
+      </View>
+      <FlatList
+        data={users}
+        renderItem={renderChatItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
       />
-      <Button title="Add" onPress={addTodo} color={COLORS.primary} />
-      {todos.map((todo, index) => (
-        <View key={index} style={styles.todoItem}>
-          <Text>{todo}</Text>
-          <Button
-            title="Remove"
-            onPress={() => removeTodo(index)}
-            color="red"
-          />
-        </View>
-      ))}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.gray,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    width: "100%",
-  },
-  todoItem: {
+    backgroundColor: "#075E54",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 10,
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#128C7E",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  listContainer: {
+    flexGrow: 1,
+    justifyContent: "flex-end", // To show the latest message at the bottom
+  },
+  messageContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  sender: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  message: {
+    fontSize: 16,
   },
 });
 
-export default TodoPage;
+export default Header;
